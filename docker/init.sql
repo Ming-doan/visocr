@@ -1,0 +1,3 @@
+CREATE DATABASE labelstudio;
+CREATE DATABASE mlflow;
+CREATE DATABASE prefect;

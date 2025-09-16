@@ -1,0 +1,16 @@
+name: docex
+
+networks:
+  docex-main:
+    driver: bridge
+
+services:
+  demo:
+    build:
+      context: .
+      dockerfile: ./ui/Dockerfile
+    container_name: demo
+    networks:
+      - docex-main
+    ports:
+      - 7860:7860
