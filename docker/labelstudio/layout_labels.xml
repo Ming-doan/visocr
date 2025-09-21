@@ -1,0 +1,15 @@
+<View>
+  <Image name="image" value="$image"/>
+  <RectangleLabels name="label" toName="image">
+    <Label value="title" background="red"/>
+    <Label value="plain text" background="blue"/>
+    <Label value="abandon" background="gray"/>
+    <Label value="figure" background="green"/>
+    <Label value="figure_caption" background="orange"/>
+    <Label value="table" background="purple"/>
+    <Label value="table_caption" background="yellow"/>
+    <Label value="table_footnote" background="pink"/>
+    <Label value="isolate_formula" background="brown"/>
+    <Label value="formula_caption" background="cyan"/>
+  </RectangleLabels>
+</View>
