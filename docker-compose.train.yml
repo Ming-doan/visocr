@@ -29,9 +29,6 @@ services:
     <<: *common-config
     image: postgres:17-alpine
     container_name: postgres
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -47,9 +44,6 @@ services:
     <<: *common-config
     image: minio/minio:latest
     container_name: minio
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
     volumes:
       - minio-data:/data
     ports:
@@ -61,16 +55,10 @@ services:
     <<: *common-config
     image: minio/mc:latest
     container_name: minio-init
-    environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
     volumes:
       - ./docker/minio/init.sh:/minio/init.sh
     entrypoint: >
-      /bin/sh -c "
-        chmod +x /minio/init.sh &&
-        /minio/init.sh
-      "
+      /bin/sh /minio/init.sh
     networks:
       - docex-main
     depends_on:
@@ -81,16 +69,14 @@ services:
     image: heartexlabs/label-studio:latest
     container_name: label-studio
     environment:
-      LABEL_STUDIO_USERNAME: admin@labelstudio.com
-      LABEL_STUDIO_PASSWORD: admin@123
       DJANGO_DB: default
       POSTGRE_NAME: labelstudio
-      POSTGRE_USER: postgres
-      POSTGRE_PASSWORD: postgres
+      POSTGRE_USER: ${POSTGRES_USER}
+      POSTGRE_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRE_PORT: 5432
       POSTGRE_HOST: postgres
-      AWS_ACCESS_KEY_ID: minioadmin
-      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
       AWS_S3_ENDPOINT_URL: http://minio:9000
     volumes:
       - label-studio-data:/label-studio/data
@@ -98,8 +84,7 @@ services:
     ports:
       - 8080:8080
     command: >
-      bash -c "
-        chmod +x /label-studio/config/init.sh &&
+      /bin/sh -c "
         /label-studio/config/init.sh &&
         label-studio
       "
@@ -113,8 +98,8 @@ services:
       context: ./docker/mlflow
     container_name: mlflow
     environment:
-      AWS_ACCESS_KEY_ID: minioadmin
-      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
       MLFLOW_S3_ENDPOINT_URL: http://minio:9000
     command: >
       mlflow server --backend-store-uri postgresql://postgres:postgres@postgres:5432/mlflow 
@@ -147,7 +132,7 @@ services:
     image: prefecthq/prefect:3-latest
     container_name: prefect-server
     environment:
-      PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/prefect
+      PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/prefect
       PREFECT_SERVER_API_HOST: 0.0.0.0
       PREFECT_MESSAGING_BROKER: prefect_redis.messaging
       PREFECT_MESSAGING_CACHE: prefect_redis.messaging
@@ -168,7 +153,7 @@ services:
     image: prefecthq/prefect:3-latest
     container_name: prefect-services
     environment:
-      PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://postgres:postgres@postgres:5432/prefect
+      PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/prefect
       PREFECT_MESSAGING_BROKER: prefect_redis.messaging
       PREFECT_MESSAGING_CACHE: prefect_redis.messaging
       PREFECT_REDIS_MESSAGING_HOST: redis

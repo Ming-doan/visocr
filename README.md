@@ -1,3 +1,9 @@
 # Document Extraction using AI
 
-## Installation
+## Quick Guide
+
+- Start Training Process
+
+```sh
+docker compose -f docker-compose.train.yml up -d
+```

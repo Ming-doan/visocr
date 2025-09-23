@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 label-studio init "Layout Model" \
   --label-config /label-studio/config/layout_labels.xml \
   --username $LABEL_STUDIO_USERNAME --password $LABEL_STUDIO_PASSWORD
