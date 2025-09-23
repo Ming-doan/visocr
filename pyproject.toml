@@ -7,11 +7,20 @@ authors = [
 ]
 license = {text = "MIT"}
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.14"
 dependencies = [
+    "uvicorn (>=0.36.0,<0.37.0)",
+    "fastapi (>=0.117.1,<0.118.0)",
+    "python-multipart (>=0.0.20,<0.0.21)"
 ]
 
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.group.train.dependencies]
+label-studio-sdk = "^2.0.8"
+prefect = "^3.4.19"
+minio = "^7.2.16"
+
