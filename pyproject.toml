@@ -1,7 +1,7 @@
 [project]
-name = "docex"
+name = "visocr"
 version = "0.1.0"
-description = "Document Extraction using AI"
+description = "Vision OCR Pipeline"
 authors = [
     {name = "Minh Doan",email = "quangminh57dng@gmail.com"}
 ]
