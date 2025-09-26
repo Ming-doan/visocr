@@ -1,7 +1,7 @@
-name: docex
+name: visocr
 
 networks:
-  docex-main:
+  visocr-main:
     driver: bridge
 
 services:
@@ -11,6 +11,6 @@ services:
       dockerfile: ./ui/Dockerfile
     container_name: demo
     networks:
-      - docex-main
+      - visocr-main
     ports:
       - 7860:7860

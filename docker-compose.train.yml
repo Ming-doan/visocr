@@ -1,14 +1,14 @@
-name: docex-train
+name: visocr-train
 
 x-common-config:
   &common-config
   env_file:
     - .env
   networks:
-    - docex-main
+    - visocr-main
 
 networks:
-  docex-main:
+  visocr-main:
     driver: bridge
 
 volumes:
@@ -60,7 +60,7 @@ services:
     entrypoint: >
       /bin/sh /minio/init.sh
     networks:
-      - docex-main
+      - visocr-main
     depends_on:
       - minio
 
@@ -106,7 +106,7 @@ services:
                     --default-artifact-root s3://mlflow-bucket/ 
                     --host 0.0.0.0
     networks:
-      - docex-main
+      - visocr-main
     ports:
       - 5000:5000
     depends_on:
@@ -160,7 +160,7 @@ services:
       PREFECT_REDIS_MESSAGING_PORT: 6379
       PREFECT_REDIS_MESSAGING_DB: 0
     networks:
-      - docex-main
+      - visocr-main
     command: prefect server services start
     depends_on:
       postgres:
@@ -175,7 +175,7 @@ services:
     environment:
       PREFECT_API_URL: http://prefect-server:4200/api
     networks:
-      - docex-main
+      - visocr-main
     command: prefect worker start --pool local-pool
     depends_on:
       prefect-server:
