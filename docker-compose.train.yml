@@ -69,6 +69,7 @@ services:
     image: heartexlabs/label-studio:latest
     container_name: label-studio
     environment:
+      LOCAL_FILES_SERVING_ENABLED: true
       DJANGO_DB: default
       POSTGRE_NAME: labelstudio
       POSTGRE_USER: ${POSTGRES_USER}
@@ -102,8 +103,8 @@ services:
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
       MLFLOW_S3_ENDPOINT_URL: http://minio:9000
     command: >
-      mlflow server --backend-store-uri postgresql://postgres:postgres@postgres:5432/mlflow 
-                    --default-artifact-root s3://mlflow-bucket/ 
+      mlflow server --backend-store-uri postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/mlflow 
+                    --default-artifact-root s3://mlflow/ 
                     --host 0.0.0.0
     networks:
       - visocr-main
@@ -119,8 +120,6 @@ services:
     container_name: redis
     volumes:
       - redis-data:/data
-    ports:
-      - 6379:6379
     healthcheck:
       test: ["CMD-SHELL", "redis-cli ping"]
       interval: 5s
@@ -133,6 +132,7 @@ services:
     container_name: prefect-server
     environment:
       PREFECT_API_DATABASE_CONNECTION_URL: postgresql+asyncpg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/prefect
+      PREFECT_UI_API_URL: http://${APP_HOST}:4200/api
       PREFECT_SERVER_API_HOST: 0.0.0.0
       PREFECT_MESSAGING_BROKER: prefect_redis.messaging
       PREFECT_MESSAGING_CACHE: prefect_redis.messaging

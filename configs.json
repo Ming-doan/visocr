@@ -1,0 +1,14 @@
+{
+    "models": [
+        {
+            "title": "Document Layout (DocLayNet)",
+            "label_config": "layout_labels.xml",
+            "data_directory": "layout"
+        },
+        {
+            "title": "OCR Text (VietOCR)",
+            "label_config": "ocr_labels.xml",
+            "data_directory": "ocr"
+        }
+    ]
+}

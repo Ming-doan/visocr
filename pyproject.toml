@@ -23,4 +23,5 @@ build-backend = "poetry.core.masonry.api"
 label-studio-sdk = "^2.0.8"
 prefect = "^3.4.19"
 minio = "^7.2.16"
+pymupdf = "^1.26.4"
 
