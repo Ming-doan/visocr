@@ -1,99 +1,142 @@
+from typing import cast
 import os
 import argparse
 import json
 from label_studio_sdk.client import LabelStudio
 
-# --------------- Configuration ---------------
+
+# ---------------- Configuration ----------------
 
 LABEL_STUDIO_URL = f"http://localhost:{os.getenv('LABEL_STUDIO_PORT', '8080')}"
-CONFIG_PATH = "/configs/configs.json"
+CONFIG_PATH = "/label-studio/configs.json"
+CACHE_PATH = "/label-studio/config/cache.json"
 
-# ---------------------------------------------
+AWS_S3_ENDPOINT_URL = os.getenv("AWS_S3_ENDPOINT_URL", "http://localhost:9000")
+AWS_S3_REGION = os.getenv("AWS_S3_REGION", "us-east-1")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "minioadmin")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "minioadmin")
 
-parser = argparse.ArgumentParser(description="Initialize Label Studio project")
-parser.add_argument("-t", "--token", type=str, required=True,
-                    help="API token for Label Studio. Go to `{host}/user/account` to get your token.")
+# ------------------------------------------------
 
 
-def create_project(
-    ls: LabelStudio,
-    configs: dict,
-) -> int:
-    # Check if the project already exists
-    projects = ls.projects.list()
-    if LABEL_STUDIO_INIT_PROJECT in [project.title for project in projects]:
-        print(
-            f"📦 Project '{LABEL_STUDIO_INIT_PROJECT}' already exists. Skipping creation.")
-        return next((project.id for project in projects if project.title == LABEL_STUDIO_INIT_PROJECT), None)
-    print(f"📦 Creating project '{LABEL_STUDIO_INIT_PROJECT}'...", end=" ")
+parser = argparse.ArgumentParser(description="Initialize Label Studio projects from configs.json")
+parser.add_argument(
+    "-t", "--token", type=str,
+    help="API token for Label Studio. Go to `{host}/user/account` to get your token. Required at the first time.",
+    default=None
+)
 
-    # Load the label config from the file
-    with open(LABEL_STUDIO_CONFIG_PATH, "r") as file:
-        label_config = file.read()
 
-    # Create the project with the label config
+def create_project(ls: LabelStudio, title: str, label_config_path: str) -> int:
+    """Create a Label Studio project if not exists."""
+    existing_projects = ls.projects.list()
+    existing_titles = [project.title for project in existing_projects]
+
+    if title in existing_titles:
+        print(f"📦 Project '{title}' already exists. Skipping creation.")
+        project = next(p for p in existing_projects if p.title == title)
+        return project.id
+
+    if not os.path.exists(label_config_path):
+        raise FileNotFoundError(f"Label config not found: {label_config_path}")
+
+    with open(label_config_path, "r", encoding="utf-8") as f:
+        label_config = f.read()
+
+    print(f"📦 Creating project '{title}'...")
     project = ls.projects.create(
-        title=LABEL_STUDIO_INIT_PROJECT,
-        label_config=label_config
+        title=title,
+        label_config=label_config,
+        description=f"Auto-created project for {title}"
     )
-    print(f"Project '{LABEL_STUDIO_INIT_PROJECT}' created successfully.")
-
+    print(f"✅ Project '{title}' created successfully.")
     return project.id
 
 
-# Check if the storage already exists
-def create_storage(ls: LabelStudio, project_id: int) -> int:
-    storages = ls.import_storage.local.list(project=project_id)
-    if LABEL_STUDIO_INIT_PROJECT in [storage.title for storage in storages]:
-        print(
-            f"📦 Storage '{LABEL_STUDIO_INIT_PROJECT}' already exists. Skipping creation.")
+def create_s3_storage(ls: LabelStudio, project_id: int, bucket: str, title: str):
+    """Create MinIO (S3-compatible) import storage for the given project."""
+    existing_storages = ls.import_storage.s3.list(project=project_id)
+    existing_titles = [s.title for s in existing_storages]
 
-        storage = next(
-            (storage for storage in storages if storage.title == LABEL_STUDIO_INIT_PROJECT), None)
-    else:
-        # Connect to local file storage
-        print(f"📦 Creating storage '{LABEL_STUDIO_INIT_PROJECT}'...", end=" ")
-        storage = ls.import_storage.local.create(
-            title=LABEL_STUDIO_INIT_PROJECT,
-            project=project_id,
-            path=LABEL_STUDIO_FILE_PATH,
-            regex_filter=".*\.(jpg|jpeg|png|gif|webp|jfif)$",
-            use_blob_urls=True,
-        )
-        print(f"Storage '{LABEL_STUDIO_INIT_PROJECT}' created successfully.")
-
-    # Sync the storage to ensure it's ready
-    if storage:
-        print(f"📦 Syncing storage '{LABEL_STUDIO_INIT_PROJECT}'...", end=" ")
-        ls.import_storage.local.sync(
-            id=storage.id
-        )
-        print(f"Storage '{LABEL_STUDIO_INIT_PROJECT}' synced successfully.")
+    if title in existing_titles:
+        print(f"🪣 Storage '{title}' already exists. Skipping creation.")
+        storage = next(s for s in existing_storages if s.title == title)
         return storage.id
+
+    print(f"🪣 Creating S3 import storage '{title}' for bucket '{bucket}'...")
+
+    storage = ls.import_storage.s3.create(
+        # S3 credentials
+        s3endpoint=AWS_S3_ENDPOINT_URL,
+        region_name=AWS_S3_REGION,
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        # Project and bucket info
+        project=project_id,
+        title=title,
+        prefix="",
+        bucket=bucket,
+        regex_filter=r".*\.(jpg|jpeg|png|gif|webp|jfif)$",
+        # Other options
+        use_blob_urls=True,
+        recursive_scan=True,
+        presign=False,
+        presign_ttl=60,
+    )
+
+    print(f"✅ S3 storage '{title}' created successfully (id={storage.id}).")
+    return storage.id
+
+
+
+
+def main():
+    args = parser.parse_args()
+
+    # If token not provided, try to load from cache
+    if args.token is None:
+        if os.path.exists(CACHE_PATH):
+            with open(CACHE_PATH, "r", encoding="utf-8") as f:
+                cache = json.load(f)
+                args.token = cache.get("token")
+                print("🔑 Loaded token from cache.json")
+        else:
+            raise ValueError("API token is required at the first time. Provide it via --token")
+
+    # Initialize Label Studio client
+    ls = LabelStudio(base_url=LABEL_STUDIO_URL, api_key=args.token)
+
+    # Load configs.json
+    with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+        configs = json.load(f)
+
+    startup_data = {
+        "token": args.token,
+        "projects": [],
+    }
+
+    for model in configs.get("models", []):
+        title = model["title"]
+        label_config_path = f"/label-studio/config/{model['label_config']}"
+        bucket = model["data_folder"].lower()
+
+        print(f"\n🚀 Initializing: {title}")
+        project_id = create_project(ls, title, label_config_path)
+        storage_id = create_s3_storage(ls, project_id, bucket, title)
+
+        startup_data["projects"].append({
+            "title": title,
+            "project_id": project_id,
+            "storage_id": storage_id,
+            "bucket": bucket,
+        })
+
+    # Save startup data
+    with open(CACHE_PATH, "w", encoding="utf-8") as f:
+        json.dump(startup_data, f, indent=2)
+
+    print("\n✅ All projects initialized successfully!")
 
 
 if __name__ == "__main__":
-    args = parser.parse_args()
-
-    # Define the label studio instance
-    ls = LabelStudio(
-        base_url=LABEL_STUDIO_URL,
-        api_key=args.token,
-    )
-
-    # Load configs
-    with open(CONFIG_PATH, "r") as f:
-        configs = json.load(f)
-
-    # Create the project
-    project_id = create_project(ls, configs)
-
-    # Create the localfile storage
-    os.makedirs(LABEL_STUDIO_FILE_PATH, exist_ok=True)
-    storage_id = create_storage(ls, project_id)
-
-    # Save the startup data to a file
-    with open("/label-studio/config/startup_data.json", "w") as f:
-        json.dump({
-            "token": args.token,
-        }, f)
+    main()

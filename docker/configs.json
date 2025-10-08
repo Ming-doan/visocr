@@ -3,12 +3,18 @@
         {
             "title": "Document Layout (DocLayNet)",
             "label_config": "layout_labels.xml",
-            "data_directory": "layout"
+            "data_folder": "layout"
         },
         {
             "title": "OCR Text (VietOCR)",
             "label_config": "ocr_labels.xml",
-            "data_directory": "ocr"
+            "data_folder": "ocr"
         }
-    ]
+    ],
+    "flow": {
+        "extract_pdfs_to_images": {
+            "source_folder": "raw",
+            "target_folder": "layout"
+        }
+    }
 }

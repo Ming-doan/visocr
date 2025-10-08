@@ -32,8 +32,6 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
-    ports:
-      - 5432:5432
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U prefect"]
       interval: 5s
@@ -52,17 +50,21 @@ services:
     command: server --console-address ":9001" /data
 
   minio-init:
-    <<: *common-config
-    image: minio/mc:latest
+    image: alpine:latest
     container_name: minio-init
+    environment:
+      MINIO_HOST: minio
+      MINIO_PORT: 9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
-      - ./docker/minio/init.sh:/minio/init.sh
-    entrypoint: >
-      /bin/sh /minio/init.sh
-    networks:
-      - visocr-main
+      - ./docker/minio/init.sh:/minio/init.sh:ro
+      - ./docker/configs.json:/minio/configs.json:ro
+    entrypoint: ["/bin/sh", "/minio/init.sh"]
     depends_on:
       - minio
+    networks:
+      - visocr-main
 
   label-studio:
     <<: *common-config
@@ -78,17 +80,14 @@ services:
       POSTGRE_HOST: postgres
       AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      AWS_S3_REGION: us-east-1
       AWS_S3_ENDPOINT_URL: http://minio:9000
     volumes:
       - label-studio-data:/label-studio/data
       - ./docker/labelstudio:/label-studio/config
+      - ./docker/configs.json:/label-studio/configs.json:ro
     ports:
       - 8080:8080
-    command: >
-      /bin/sh -c "
-        /label-studio/config/init.sh &&
-        label-studio
-      "
     depends_on:
       - postgres
       - minio
@@ -139,6 +138,7 @@ services:
       PREFECT_REDIS_MESSAGING_HOST: redis
       PREFECT_REDIS_MESSAGING_PORT: 6379
       PREFECT_REDIS_MESSAGING_DB: 0
+      PREFECT_SERVER_API_AUTH_STRING: ${PREFECT_SERVER_USERNAME}:${PREFECT_SERVER_PASSWORD}
     command: prefect server start --no-services
     ports:
       - 4200:4200
@@ -174,6 +174,7 @@ services:
     container_name: prefect-worker
     environment:
       PREFECT_API_URL: http://prefect-server:4200/api
+      PREFECT_API_AUTH_STRING: ${PREFECT_SERVER_USERNAME}:${PREFECT_SERVER_PASSWORD}
     networks:
       - visocr-main
     command: prefect worker start --pool local-pool
