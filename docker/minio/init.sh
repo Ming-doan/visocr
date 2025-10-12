@@ -46,6 +46,7 @@ for folder in $FOLDERS; do
     BUCKET_NAME=$(echo "$folder" | tr '[:upper:]' '[:lower:]')
     echo "🪣 Creating bucket: $BUCKET_NAME"
     mc mb "myminio/$BUCKET_NAME" --ignore-existing
+    mc mb "myminio/$BUCKET_NAME-annotated" --ignore-existing
 done
 
 echo "✅ All buckets created successfully."

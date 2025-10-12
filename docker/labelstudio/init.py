@@ -52,17 +52,17 @@ def create_project(ls: LabelStudio, title: str, label_config_path: str) -> int:
     return project.id
 
 
-def create_s3_storage(ls: LabelStudio, project_id: int, bucket: str, title: str):
+def create_import_s3_storage(ls: LabelStudio, project_id: int, bucket: str, title: str):
     """Create MinIO (S3-compatible) import storage for the given project."""
     existing_storages = ls.import_storage.s3.list(project=project_id)
     existing_titles = [s.title for s in existing_storages]
 
     if title in existing_titles:
-        print(f"🪣 Storage '{title}' already exists. Skipping creation.")
+        print(f"🪣 Storage (import) '{title}' already exists. Skipping creation.")
         storage = next(s for s in existing_storages if s.title == title)
         return storage.id
 
-    print(f"🪣 Creating S3 import storage '{title}' for bucket '{bucket}'...")
+    print(f"🪣 Creating S3 (import) storage '{title}' for bucket '{bucket}'...")
 
     storage = ls.import_storage.s3.create(
         # S3 credentials
@@ -83,10 +83,37 @@ def create_s3_storage(ls: LabelStudio, project_id: int, bucket: str, title: str)
         presign_ttl=60,
     )
 
-    print(f"✅ S3 storage '{title}' created successfully (id={storage.id}).")
+    print(f"✅ S3 (import) storage '{title}' created successfully (id={storage.id}).")
     return storage.id
 
 
+def create_export_s3_storage(ls: LabelStudio, project_id: int, bucket: str, title: str):
+    """Create MinIO (S3-compatible) export storage for the given project."""
+    existing_storages = ls.export_storage.s3.list(project=project_id)
+    existing_titles = [s.title for s in existing_storages]
+
+    if title in existing_titles:
+        print(f"🪣 Storage (export) '{title}' already exists. Skipping creation.")
+        storage = next(s for s in existing_storages if s.title == title)
+        return storage.id
+
+    print(f"🪣 Creating S3 (export) storage '{title}' for bucket '{bucket}'...")
+
+    storage = ls.export_storage.s3.create(
+        # S3 credentials
+        s3endpoint=AWS_S3_ENDPOINT_URL,
+        region_name=AWS_S3_REGION,
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        # Project and bucket info
+        project=project_id,
+        title=title,
+        bucket=bucket,
+        prefix="",
+    )
+
+    print(f"✅ S3 (export) storage '{title}' created successfully (id={storage.id}).")
+    return storage.id
 
 
 def main():
@@ -121,12 +148,14 @@ def main():
 
         print(f"\n🚀 Initializing: {title}")
         project_id = create_project(ls, title, label_config_path)
-        storage_id = create_s3_storage(ls, project_id, bucket, title)
+        import_storage_id = create_import_s3_storage(ls, project_id, bucket, title)
+        export_storage_id = create_export_s3_storage(ls, project_id, f"{bucket}-annotated", title)
 
         startup_data["projects"].append({
             "title": title,
             "project_id": project_id,
-            "storage_id": storage_id,
+            "import_storage_id": import_storage_id,
+            "export_storage_id": export_storage_id,
             "bucket": bucket,
         })
 

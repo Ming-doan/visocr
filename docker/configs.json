@@ -15,6 +15,15 @@
         "extract_pdfs_to_images": {
             "source_folder": "raw",
             "target_folder": "layout"
+        },
+        "extract_layout_to_images": {
+            "source_folder": "layout",
+            "target_ocr_folder": "ocr",
+            "filtered_ocr_labels": ["title", "plain text", "figure_caption", "table_caption", "table_footnote"],
+            "target_tableformer_folder": "tableformer",
+            "filtered_tableformer_labels": ["table"],
+            "target_imagecaption_folder": "imagecaption",
+            "filtered_imagecaption_labels": ["figure"]
         }
     }
 }
