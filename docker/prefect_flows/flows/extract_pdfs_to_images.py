@@ -13,10 +13,7 @@ from tasks.minio_upload_files import upload_files_task, FileToUpload
 FLOW_NAME = "extract_pdfs_to_images"
 
 
-@flow(
-    name=FLOW_NAME,
-    log_prints=True
-)
+@flow(name=FLOW_NAME)
 def extract_pdfs_to_images_flow(configs: FlowConfig | None = None) -> None:
     configs = configs or get_default_configs(FLOW_NAME)
 

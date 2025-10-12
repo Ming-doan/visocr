@@ -1,4 +1,3 @@
-from typing import cast
 import os
 import argparse
 import json
