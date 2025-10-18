@@ -9,6 +9,11 @@
             "title": "OCR Text (VietOCR)",
             "label_config": "ocr_labels.xml",
             "data_folder": "ocr"
+        },
+        {
+            "title": "Table Former (TableFormer)",
+            "label_config": "tableformer_labels.xml",
+            "data_folder": "tableformer"
         }
     ],
     "flow": {
