@@ -1,0 +1,4 @@
+<View>
+  <Image name="image" value="$image"/>
+  <TextArea name="transcription" toName="image" rows="5" placeholder="Transcribe here..." editable="true"/>
+</View>

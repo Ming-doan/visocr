@@ -1,38 +1,17 @@
 <View>
-  <!-- Source image of a document/table -->
   <Image name="image" value="$image"/>
 
-  <!-- Step 1: Annotate table boundaries -->
   <RectangleLabels name="tables" toName="image" showInline="true">
     <Label value="Table" background="blue"/>
   </RectangleLabels>
 
-  <!-- Step 2: Annotate each cell box inside tables -->
   <RectangleLabels name="cells" toName="image" showInline="true">
     <Label value="Cell" background="green"/>
     <Label value="HeaderCell" background="orange"/>
   </RectangleLabels>
 
-  <!-- Step 3: Optionally tag merged or spanned cells -->
   <Relations name="spans" fromName="cells" toName="cells">
-    <Label value="row_span"/>
-    <Label value="col_span"/>
+    <Relation value="row_span"/>
+    <Relation value="col_span"/>
   </Relations>
-
-  <!-- Step 4: Optional metadata (indexes or content links) -->
-  <Choices name="cell_type" toName="cells" choice="single" required="false">
-    <Choice value="header"/>
-    <Choice value="body"/>
-    <Choice value="footer"/>
-  </Choices>
-
-  <!-- Step 5: (Optional) OCR Text region association -->
-  <TextArea name="ocr_text" toName="cells"
-            editable="true" perRegion="true"
-            placeholder="(optional) Enter OCR text inside cell">
-  </TextArea>
-
-  <Style>
-    .lsf-main { font-family: sans-serif; }
-  </Style>
 </View>

@@ -14,6 +14,11 @@
             "title": "Table Former (TableFormer)",
             "label_config": "tableformer_labels.xml",
             "data_folder": "tableformer"
+        },
+        {
+            "title": "Image Captioning (BLIP2)",
+            "label_config": "imagecaption_labels.xml",
+            "data_folder": "imagecaption"
         }
     ],
     "flow": {

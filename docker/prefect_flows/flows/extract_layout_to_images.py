@@ -74,6 +74,11 @@ def extract_layout_to_images_flow(configs: FlowConfig | None = None) -> None:
                 continue
 
             # Crop the image based on the bounding box
+            original_width, original_height = image_data.size
+            x = int((x / 100) * original_width)
+            y = int((y / 100) * original_height)
+            width = int((width / 100) * original_width)
+            height = int((height / 100) * original_height)
             crop_box = (x, y, x + width, y + height)
             cropped_image = image_data.crop(crop_box)
 
